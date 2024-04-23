@@ -8,10 +8,17 @@
 <canvas id='canvas' width='512' height='576'></canvas>
 <textarea id='table' rows='11' cols='80'></textarea>
 <button onclick="processTable();">Update</button>
+<select id='tileset' onchange="loadTileset();">
+<option value='GrassTiles.png'>Grass</option>
+<option value='DesertTiles.png'>Desert</option>
+<option value='IceTiles.png'>Ice</option>
+<option value='SkyTiles.png'>Sky</option>
+</select>
+
 
 <script>
 let image = new Image();
-image.src = 'tiles.png';
+image.src = 'IceTiles.png';
 image.addEventListener('load', redrawSource);
 
 const tileWidth = 8, tileHeight = 8;
@@ -51,6 +58,11 @@ function redrawSource() {
     fillTable();
 }
 
+function loadTileset() {
+    let tileset = document.getElementById('tileset').value;
+    image.src = tileset;
+}
+
 function doMouseClick(e) {
     const rect = canvas.getBoundingClientRect();
     
@@ -60,7 +72,7 @@ function doMouseClick(e) {
     let gridY = Math.floor(y/tileHeight) * tileHeight;
     
     // select tile from source image
-    if (y > mapHeight && y < (mapHeight+sourceHeight) && x < sourceWidth) {
+    if (y > mapHeight && y < (mapHeight+sourceHeight) && x > 0 && x < sourceWidth) {
         let tileX = Math.floor(x/tileWidth);
         let tileY = Math.floor((y-mapHeight)/tileHeight);
         sourceTile = tileY * (sourceWidth / tileWidth) + tileX;
@@ -69,7 +81,7 @@ function doMouseClick(e) {
     }
     
     // place tile on target image
-    if (y<mapHeight && x<mapWidth) {
+    if (y>0 && y<mapHeight && x>0 && x<mapWidth) {
         context.clearRect(gridX, gridY, tileWidth, tileHeight);
         context.drawImage(image, sourceX, sourceY, tileWidth, tileHeight, gridX, gridY, tileWidth, tileHeight);
         let tileX = Math.floor(x/tileWidth);
