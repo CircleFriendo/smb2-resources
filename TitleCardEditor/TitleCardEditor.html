@@ -7,10 +7,13 @@
 
 <canvas id='canvas' width='512' height='576'></canvas>
 <textarea id='table' rows='11' cols='80'></textarea>
+<button onclick="processTable();">Update</button>
 
 <script>
 let image = new Image();
 image.src = 'tiles.png';
+image.addEventListener('load', redrawSource);
+
 const tileWidth = 8, tileHeight = 8;
 const mapRows = 10, mapColumns = 16;
 const sourceWidth = 128, sourceHeight = 64;
@@ -24,24 +27,28 @@ let mapHeight = mapRows * tileHeight;
 let mapWidth = mapColumns * tileWidth;
 let sourceX, sourceY, sourceTile;
 
+let textarea = document.getElementById('table');
+
 let canvas = document.getElementById('canvas');
 let context = canvas.getContext('2d');
 
 context.scale(scale, scale);
 
+
 canvas.addEventListener('click', doMouseClick);
 canvas.addEventListener('mousemove', doMouseMove);
-image.addEventListener('load', redrawSource);
 
 
 function initializeTiles() {
     for (let i=0; i<mapColumns*mapRows; i++) {
-            tiles[i]='$fb';
+            tiles[i]=251;
         }
 }
 
 function redrawSource() {
     context.drawImage(image, 0, 0, sourceWidth, sourceHeight, 0, mapHeight, sourceWidth, sourceHeight);
+    fillTarget();
+    fillTable();
 }
 
 function doMouseClick(e) {
@@ -68,15 +75,56 @@ function doMouseClick(e) {
         let tileX = Math.floor(x/tileWidth);
         let tileY = Math.floor(y/tileHeight);
         let targetTile = tileY * mapColumns + tileX;
-        tiles[targetTile] = '$'+(sourceTile+128).toString(16);
+        tiles[targetTile] = sourceTile+128;
         
         fillTable();
         
     }
 }
 
+function hexcode(tile) {
+    return '$'+(tile).toString(16);
+}
+
+function placeTile(x, y, tile) {
+    var xpos = x*tileWidth;
+    var ypos = y*tileHeight;
+    
+    var xs = tile%16;
+    var ys = Math.floor((tile-128)/16);
+    
+    var xspos = xs*tileWidth;
+    var yspos = ys*tileHeight;
+    
+    context.clearRect(xpos, ypos, tileWidth, tileHeight);
+    context.drawImage(image, xspos, yspos, tileWidth, tileHeight, xpos, ypos, tileWidth, tileHeight);
+}
+
+function fillTarget() {
+    let k = 0;
+    for (let i=0; i<mapRows; i++) {
+        for (let j=0; j<mapColumns; j++) {
+            placeTile(j,i,tiles[k]);
+            k++;
+        }
+    }   
+}
+
 function fillTable() {
-    document.getElementById('table').innerHTML = constructString();
+    document.getElementById('table').value = constructString();
+}
+
+function parseTable() {
+    var text = document.getElementById('table').value;
+    var values = text.replace(/^db /mg, '').replace(/\$/g,'').trim().split(/[\s,]+/);
+    for (var k=0; k<160; k++) {
+        tiles[k] = parseInt(values[k],16);
+    }
+}
+
+function processTable() {
+    parseTable();
+    fillTarget();
 }
 
 function constructString() {
@@ -85,7 +133,7 @@ function constructString() {
     for (let i=0; i<mapRows; i++) {
         string += "db ";
         for (let j=0; j<mapColumns; j++) {
-            string += tiles[k];
+            string += hexcode(tiles[k]);
             if (j!=mapColumns-1) {
                 string += ',';
             }
