@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>SMB2 Title Card Editor</title>
+</head>
+<body>
+
+<canvas id='canvas' width='512' height='576'></canvas>
+<textarea id='table' rows='11' cols='80'></textarea>
+
+<script>
+let image = new Image();
+image.src = 'tiles.png';
+const tileWidth = 8, tileHeight = 8;
+const mapRows = 10, mapColumns = 16;
+const sourceWidth = 128, sourceHeight = 64;
+
+const scale = 4;
+
+
+let tiles = new Array(mapColumns*mapRows);
+initializeTiles();
+let mapHeight = mapRows * tileHeight;
+let mapWidth = mapColumns * tileWidth;
+let sourceX, sourceY, sourceTile;
+
+let canvas = document.getElementById('canvas');
+let context = canvas.getContext('2d');
+
+context.scale(scale, scale);
+
+canvas.addEventListener('click', doMouseClick);
+canvas.addEventListener('mousemove', doMouseMove);
+image.addEventListener('load', redrawSource);
+
+
+function initializeTiles() {
+    for (let i=0; i<mapColumns*mapRows; i++) {
+            tiles[i]='$fb';
+        }
+}
+
+function redrawSource() {
+    context.drawImage(image, 0, 0, sourceWidth, sourceHeight, 0, mapHeight, sourceWidth, sourceHeight);
+}
+
+function doMouseClick(e) {
+    const rect = canvas.getBoundingClientRect();
+    
+    let x = (e.clientX- rect.left) / scale;
+    let y = (e.clientY - rect.top) / scale;
+    let gridX = Math.floor(x/tileWidth) * tileWidth;
+    let gridY = Math.floor(y/tileHeight) * tileHeight;
+    
+    // select tile from source image
+    if (y > mapHeight && y < (mapHeight+sourceHeight) && x < sourceWidth) {
+        let tileX = Math.floor(x/tileWidth);
+        let tileY = Math.floor((y-mapHeight)/tileHeight);
+        sourceTile = tileY * (sourceWidth / tileWidth) + tileX;
+        sourceX = gridX;
+        sourceY = gridY - mapHeight;
+    }
+    
+    // place tile on target image
+    if (y<mapHeight && x<mapWidth) {
+        context.clearRect(gridX, gridY, tileWidth, tileHeight);
+        context.drawImage(image, sourceX, sourceY, tileWidth, tileHeight, gridX, gridY, tileWidth, tileHeight);
+        let tileX = Math.floor(x/tileWidth);
+        let tileY = Math.floor(y/tileHeight);
+        let targetTile = tileY * mapColumns + tileX;
+        tiles[targetTile] = '$'+(sourceTile+128).toString(16);
+        
+        fillTable();
+        
+    }
+}
+
+function fillTable() {
+    document.getElementById('table').innerHTML = constructString();
+}
+
+function constructString() {
+    let string = '';
+    let k = 0;
+    for (let i=0; i<mapRows; i++) {
+        string += "db ";
+        for (let j=0; j<mapColumns; j++) {
+            string += tiles[k];
+            if (j!=mapColumns-1) {
+                string += ',';
+            }
+            k++;
+        }
+        string += "\n";
+    }
+    return string;
+}
+
+function doMouseMove(e) {
+
+}
+
+</script>
+</body>
+</html>
