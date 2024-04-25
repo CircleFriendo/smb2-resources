@@ -2,19 +2,30 @@
 <html>
 <head>
 <title>SMB2 Title Card Editor</title>
+<link rel='stylesheet' href='style.css'>
 </head>
 <body>
 
-<canvas id='canvas' width='512' height='576'></canvas>
-<textarea id='table' rows='11' cols='80'></textarea>
-<button onclick="processTable();">Update</button>
+<h1>Super Mario Bros. 2 Title Card Editor</h1>
+<div class='row'>
+<div id='main'><canvas id='canvas' width='512' height='580'></canvas></div>
+<div id='widgets'>
+
+<p><label>Tileset:</label>
 <select id='tileset' onchange="loadTileset();">
 <option value='GrassTiles.png'>Grass</option>
 <option value='DesertTiles.png'>Desert</option>
 <option value='IceTiles.png'>Ice</option>
 <option value='SkyTiles.png'>Sky</option>
-</select>
+</select></p>
 
+<p><textarea id='table' rows='11' cols='80'></textarea>
+<button onclick="processTable();">Update</button></p>
+
+
+<p id='instructions'>Click on a source tile from the bottom to select it, then click a tile on top to place. Copy and paste the code from the text box into TitleCards.asm. </p>
+</div>
+</div>
 
 <script>
 let image = new Image();
@@ -24,6 +35,7 @@ image.addEventListener('load', redrawSource);
 const tileWidth = 8, tileHeight = 8;
 const mapRows = 10, mapColumns = 16;
 const sourceWidth = 128, sourceHeight = 64;
+const separation = 1;
 
 const scale = 4;
 
@@ -47,13 +59,14 @@ canvas.addEventListener('mousemove', doMouseMove);
 
 
 function initializeTiles() {
+    const tileFB = 251;
     for (let i=0; i<mapColumns*mapRows; i++) {
-            tiles[i]=251;
+            tiles[i]=tileFB;
         }
 }
 
 function redrawSource() {
-    context.drawImage(image, 0, 0, sourceWidth, sourceHeight, 0, mapHeight, sourceWidth, sourceHeight);
+    context.drawImage(image, 0, 0, sourceWidth, sourceHeight, 0, mapHeight+separation, sourceWidth, sourceHeight);
     fillTarget();
     fillTable();
 }
@@ -72,9 +85,9 @@ function doMouseClick(e) {
     let gridY = Math.floor(y/tileHeight) * tileHeight;
     
     // select tile from source image
-    if (y > mapHeight && y < (mapHeight+sourceHeight) && x > 0 && x < sourceWidth) {
+    if (y > mapHeight+separation && y < (mapHeight+sourceHeight) && x > 0 && x < sourceWidth) {
         let tileX = Math.floor(x/tileWidth);
-        let tileY = Math.floor((y-mapHeight)/tileHeight);
+        let tileY = Math.floor((y-mapHeight-separation)/tileHeight);
         sourceTile = tileY * (sourceWidth / tileWidth) + tileX;
         sourceX = gridX;
         sourceY = gridY - mapHeight;

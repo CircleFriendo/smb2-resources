@@ -1,0 +1,11 @@
+.row {
+    display: flex;
+}
+
+#widgets {
+    padding: 20px;
+}
+
+#instructions {
+    width: 400px;
+}
