@@ -1,4 +1,21 @@
 
+function importMessage() {
+    const file = document.getElementById('import').files[0];
+    
+    if (file) {
+        const fr = new FileReader();
+        fr.readAsText(file);
+        fr.addEventListener('loadend', loadMessageFromFile);
+    }
+}
+
+function loadMessageFromFile(e) {
+    const fr = e.target;
+    var result = fr.result;
+    state.messages = JSON.parse(result.match(/messages:(.*)$/)[1]);
+    loadMessage();
+}
+
 function updateText() {
     state.messages[state.current] = document.getElementById('message').value;
     
