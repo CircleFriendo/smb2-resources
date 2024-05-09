@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>SMB2 Pause Message Editor</title>
+<link rel='stylesheet' href='style.css'>
+<script src="PauseMessageEditor.js"></script>
+</head>
+<body>
+
+<h1>Super Mario Bros. 2 Pause Message Editor</h1>
+
+<div class='row'>
+<div id='view'><canvas id='preview' width='512' height='448'></canvas></div>
+<div id='widgets'>
+<select id='level' onchange="loadMessage();">
+</select>
+<select id='area' onchange="loadMessage();">
+</select><br>
+<textarea id='message' rows="11" cols="22" oninput="updateText();"></textarea><br>
+<button onclick="exportAsm();">Export asm</button><br>
+<label>Import</label><input type='file' id='import' onchange="importMessage();">
+</div>
+</div>
+
+<script>
+const previewWidth = 256, previewHeight = 224;
+const tileWidth = 8, tileHeight = 8;
+const scale = 2;
+
+populateSelects();
+
+let state = newState();
+
+let image = new Image();
+image.src = "preview.png";
+image.addEventListener('load', redrawPreview);
+
+
+let tiles = new Image();
+tiles.src = 'Tiles.png';
+tiles.addEventListener('load', redrawPreview);
+
+let preview = document.getElementById('preview');
+context = preview.getContext('2d');
+context.scale(scale, scale);
+
+loadMessage();
+
+</script>
+</body>
+</html>
