@@ -51,7 +51,7 @@ function placeTile(x, y, tile) {
     var ypos = y*tileHeight;
     
     var xs = tile%16;
-    var ys = Math.floor((tile-128)/16);
+    var ys = Math.floor((tile)/16);
     
     var xspos = xs*tileWidth;
     var yspos = ys*tileHeight;
@@ -76,10 +76,20 @@ function redrawPreview() {
             if (y>19) break;
             continue;
         }
-        if (x<26) {
-            placeTile(x,y,alphabet[chr]);
+        if (chr=='\\' && i+2<message.length && x<26) {
+            var chr1 = message[i+1];
+            var chr2 = message[i+2];
+            i += 2;
+            chr = parseInt(chr1+chr2, 16);
+            placeTile(x,y,chr);
+            x++;
         }
-        x++;
+        if (chr in alphabet) {
+            if (x<26) {
+                placeTile(x,y,alphabet[chr]);
+            }
+            x++;
+        }
     }
 }
 
@@ -210,15 +220,32 @@ function generateMessageCode() {
         var nlines = Math.min(lines.length, 11);
         for (var j=0; j<nlines; j++) {
             var line = lines[j];
+            var bytes = [];
+            var x = 6;
             
-            if (line.length > 0) {
-                var x = 6;
-                var nchars = Math.min(line.length, 20);
+            for (var k=0; k<line.length; k++) {
+                var chr = line[k];
+                if (chr == '\\' && k+2 < line.length) {
+                    var chr1 = line[k+1];
+                    var chr2 = line[k+2];
+                    k += 2;
+                    chr = parseInt(chr1+chr2, 16);
+                    bytes.push(chr);    
+                }
+                if (chr in alphabet) {
+                    bytes.push(alphabet[chr]);
+                }
+            }
+            
+            
+            var nchars = Math.min(bytes.length, 20);
+            
+            if (nchars > 0) {
                 position = y*32 + x + 9248; //$2420
                 code.push( Math.floor(position/256), position%256, nchars);
                 
                 for (var k=0; k<nchars; k++) {
-                    code.push(alphabet[line[k]]);
+                    code.push(bytes[k]);
                 }
             }
             y++;
