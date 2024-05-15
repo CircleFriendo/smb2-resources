@@ -14,12 +14,20 @@ function loadMessageFromFile(e) {
     var result = fr.result;
     state.messages = JSON.parse(result.match(/messages:(.*)$/)[1]);
     loadMessage();
+    updateCount();
 }
 
 function updateText() {
     state.messages[state.current] = document.getElementById('message').value;
     
+    updateCount();
     redrawPreview();
+}
+
+function updateCount() {
+    var code = generateMessageCode();
+    var count = code.code.length;
+    document.getElementById('count').innerHTML = `${count}/8733`;
 }
 
 function loadMessage() {
@@ -182,13 +190,12 @@ var alphabet = {
     ' ': 251 
 }
 
-function generateMessageData() {
+function generateMessageCode() {
     var code = [];
     var offsets = [];
     var offset = 0;
     var position;
-    var text;
-    
+        
     for (var i=0; i<200; i++){
         offsets[i] = offset + 40402; //$9DD2
         var message = state.messages[i];
@@ -216,10 +223,18 @@ function generateMessageData() {
             }
             y++;
         }
-        offset = code.push(0);
-        
-        
+        offset = code.push(0);        
     }
+    return {
+        code: code,
+        offsets: offsets
+    }
+}
+
+function generateMessageData() {
+    var messageCode = generateMessageCode();
+    var code = messageCode.code;
+    var offsets = messageCode.offsets;
     
     var data = `
 org $00DC53
