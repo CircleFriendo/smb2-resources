@@ -27,7 +27,11 @@ function updateText() {
 function updateCount() {
     var code = generateMessageCode();
     var count = code.code.length;
-    document.getElementById('count').innerHTML = `${count}/8733`;
+    var warning = '';
+    if (count > 8748) {
+        warning = ' Warning: Total message length exceeds available space. You can still export your .asm file to save your messages, but you will be unable to insert into your rom until you reduce the total size.';
+    }
+    document.getElementById('count').innerHTML = `${count}/8748` + warning;
 }
 
 function loadMessage() {
@@ -64,6 +68,9 @@ function redrawPreview() {
     context.drawImage(image, 0, 0, previewWidth, previewHeight, 0, 0, previewWidth, previewHeight);
     
     var message = state.messages[state.current].toUpperCase();
+    
+    placeTile(18, 5, alphabet[Math.floor(state.level/3)+1]);
+    placeTile(20, 5, alphabet[state.level%3+1]);
     
     var x = 6;
     var y = 9;
@@ -209,7 +216,7 @@ function generateMessageCode() {
     for (var i=0; i<200; i++){
         offsets[i] = offset + 40402; //$9DD2
         var message = state.messages[i];
-        if (message === undefined) {
+        if (message === undefined || message === null) {
             message = "";
         }
         message = message.toUpperCase();
@@ -282,6 +289,8 @@ db `
         data += '$' + (code[i]).toString(16) + ',';
     }
     data += "$00\n"; //just using up that last comma
+
+    data += "warnpc $010011\n"
 
     data += "//messages:" + JSON.stringify(state.messages);
 
