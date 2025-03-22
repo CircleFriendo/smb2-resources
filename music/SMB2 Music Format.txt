@@ -1,0 +1,181 @@
+SMB2 Music Format
+
+The music format for Super Mario Bros. 2 consists of music data, split into segments, and three main tables: a Segment table, a Header table, and a Song table, alongside a few auxiliary tables such as the tempo table and instrument table.
+
+The NES sound chip is capable of playing 5 channels: 2 square wave channels, a triangle wave channel, a noise channel, and a sample channel.
+
+Each song in SMB2 is composed of a sequence of segments. Each segment contains music data for all 5 channels. Segments can be played in any order and can be repeated within songs. A song's loop point is also at the beginning of a segment. A segment can last for any length of time, but is limited to 256 bytes in total between all 5 channels.
+
+
+Data locations:
+
+The first music segment is located at $00912E
+The segment table is located at $009010
+The header table is located at $00903A
+The song table is located at $009113
+
+
+Music Data:
+
+The Music Data segments contain all the data for the actual musical notes of the songs. Segments contain data for all 5 channels, starting with the second square wave channel. The other channels can appear in any order, but the standard order in SMB2 is: Square 2, Square 1, Triangle, Noise, Sample.
+
+Square 2 is the control channel. It determines the metrical length of the segment. The Square 1 and Triangle channels must be the same length as the Square 2 channel. The Noise and Sample channels can be the same length or they can be set to loop. For example, the Square 2 channel could contain a four-measure melody, then the Square 1 and Triangle channel must also be four measures, but the Noise channel could be four measures, or it could be one measure of looping percussion. Same with the Sample channel.
+
+Any of the channels other than Square 2 can also be omitted entirely if they aren't needed for this segment.
+
+Each channel is read as a sequence of bytes. Each byte can be one of several types:
+
+$00: Marks the end of a channel. Square 2 must end with a $00 byte and that determines the metrical length of the segment. Square 1 and Triangle should not have a $00 byte. Their length is determined by the length of the Square 2 channel. If the Noise or Sample channels do not have a $00 byte, they will play for the same length of time as Square 2, or they can use a $00 to loop to the beginning of the segment early.
+
+$01-$7D: Note data. Designates which sound to play. Square 1, Square 2, and Triangle are melodic channels, and the note data designates which pitch to play. Only even values are valid notes. Middle C (C4) is note value $30. The pitch goes up a half-step every time you add 2. Adding $18 goes up an octave. Likewise, subracting 2 goes down a half-step. The Triangle channel plays the same notes, but pitched down an octave. So $30 plays C3 instead. Noise and Sample are not pitched, and specific values designate which sound or sample to play.
+
+$7E: Rest. Rest for the current note length for melodic channels. The Noise and Sample channels rest by playing a silent note instead.
+
+$80+: Attribute data. The high nibble is the timbre. The low nibble is the note length. The timbre for the Square 1 and Square 2 channels basically plays different "instruments" by varying the properties and volume of the square wave. The Triangle channel does not use timbre. I have not studied the effect of timbre on Noise or Sample channels. The note length sets the length of future notes and rests in that channel.
+
+
+Header Table:
+
+The header table contains all the metadata for each segment: tempo, address, and channel offsets. Each header is six bytes long(*):
+1st byte: The tempo, designated as an offset into the tempo table.
+2nd-3rd byte: The address where the Music Data for the segment is located. (The address in memory where the segment is loaded. The music engine is in bank 4-5 starting at ROM offset $008010 and is loaded at address $8000, so this value will be $10 less than the ROM offset where the segment is placed.)
+4th byte: Offset for the Triangle channel data. How far into the segment the data for the Triangle channel starts.
+5th byte: Offset for the Square 1 channel data.
+6th byte: Offset for the Noise and/or Sample channel data. There is only one offset for the Noise and Sample channels, so a segment can have one or the other but not both. I am not sure how it decides which channel it actually is between the two.
+
+A value of $00 for the 4th-6th bytes indicates that channel is not present in the segment.
+
+(*): If a segment does not have a Noise or Sample channel, and the next segment in the header has a tempo of 300bpm, both are designated by $00, so the two headers can overlap. Thus, the $00 which is the 6th byte of one header is also the 1st byte of the next header. This can make it look like the first header is only five bytes.
+
+
+Segment Table:
+
+The segment table contains offsets for all the segments in the header table, in the order they should be played. So if a segment is repeated more than once in a song, it will have one entry in the header table, but the header offset will appear multiple times in the segment table. The offsets in this table are the offset of the 1st byte of the segment's header from the beginning of this segment table (not the beginning of the header table). So, the header table must appear immediately after the segment table, and the last header in the header table must be less than 256 bytes from the beginning of the segment table. 
+
+
+Song Table:
+
+The song table designates which segments in the segment table make up which song. The song table contains offsets into the segment table for which segments are the start, end and loop point for each song. All the start offsets are listed first, then the end offsets, then the loop offsets.
+
+
+Example:
+
+Let's run through an example from start to finish. The Character Select song.
+
+Character Select is song $01, so let's look it up in the song table.
+
+$009113       + $01: $07
+$009113 + $09 + $01: $0F
+$009113 + $12 + $01: $08
+
+So the Character Select song starts at offset $07 in the segment table, continues until $0F, then loops back to $08. $07 is the intro and never plays again.
+
+$009010 + $07-$0F:   $2A $30 $36 $30 $3C $42 $A9 $9E $93
+
+If you listen to the Character Select music, you can hear the first segment is the intro, then the second segment, then the third segment, the fourth segment is a repeat of the second segment, then the rest of the segments play and then loop back to the second segment again.
+
+Let's take a look at the header for that second segment.
+
+$009010 + $30-$35:    $00 $5C $99 $8E $48 $B0
+
+$00 is 300bpm in the tempo table.
+$5C $99 means the music data for this segment is at $995C (rom offset $00996C).
+$8E means the Triangle channel data is offset $8E into the music data.
+$48 means the Square 1 channel data is $48 into the music data (before the Triangle).
+$B0 means the Noise/Sample channel data is $B0 into the music data.
+
+Let's take a look at the music data.
+
+$00996C      : $A8 $50 $7E $50 $A6 $7E $A2 $50 $A6 $7E . . .
+$00996C + $8E: $88 $30 $7E $30 $7E $30 $7E $30 $7E $34 . . .
+$00996C + $48: $A8 $3E $7E $A8 $3E $A6 $7E $A2 $3E . . .
+$00996C + $B0: $88 $02 $04 $00 
+
+The Square 2 channel starts with $A8. $Ax means instrument 2 which is a piano sound. $x8 is a quarter note. $50 $7E $50 is note E5, then rest, then E5 again, all quarter notes. Then $A6 $7E is a quarter-note triplet rest, followed by $A2 $50, a eighth-note triplet E5, producing the syncopated rhythm of the melody.
+
+The Triangle channel starts with $88. Quarter notes again. The Triangle channel doesn't have different instruments. $30 is C3. This channel starts with a steady rhythm of C3, rest, C3, rest, C3, rest, C3, rest, all quarter notes.
+
+The Square 1 channel also starts with quarter notes on the piano. The $A8 on the fourth byte is redundant. Ignoring that, it is playing the same rhythm as Square 2, but on note G4.
+
+The Noise channel starts with $88, so quarter notes. $02 and $04 are two different drum sounds. Then $00 is a repeat, so this segment just plays alternating quarter notes on two different drums.
+
+
+Reference Tables:
+
+
+Note Pitches:
+
+define C3 $18
+define D3 $1C
+define E3 $20
+define F3 $22
+define G3 $26
+define A3 $2A
+define B3 $2E
+define C4 $30
+define D4 $34
+define E4 $38
+define F4 $3A
+define G4 $3E
+define A4 $42
+define B4 $46
+define C5 $48
+define D5 $4C
+define E5 $50
+define F5 $52
+define G5 $56
+define A5 $5A
+define B5 $5E
+define C6 $60
+define D6 $64
+define E6 $68
+define F6 $6A
+define G6 $6E
+define A6 $72
+define B6 $76
+define C7 $78
+ 
+ 
+Note Lengths:
+
+define sixteenth       $80
+define sixteenthS      $81
+define eighthtriplet   $82
+define eighthtripletS  $83
+define eighth          $84
+define eighthdotted    $85
+define quartertriplet  $86
+define quartertripletS $87
+define quarter         $88
+define quarterdotted   $89
+define half            $8A
+define halfdotted      $8B
+define whole           $8C
+
+
+Instruments:
+
+long_square    $80
+short_square   $90
+piano          $A0
+organ          $B0
+strings        $C0
+pluck          $D0
+soft_pluck     $F0
+
+
+Tempos:
+
+300bpm  $00
+257bpm  $0D
+225bpm  $1B
+200bpm  $28
+180bpm  $37
+164bpm  $44
+150bpm  $52
+138bpm  $60
+129bpm  $6E
+120bpm  $7D
+112bpm  $8B
+106bpm  $98
+100bpm  $A6
