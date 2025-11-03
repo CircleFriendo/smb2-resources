@@ -41,7 +41,7 @@ The header table contains all the metadata for each segment: tempo, address, and
 2nd-3rd byte: The address where the Music Data for the segment is located. (The address in memory where the segment is loaded. The music engine is in bank 4-5 starting at ROM offset $008010 and is loaded at address $8000, so this value will be $10 less than the ROM offset where the segment is placed.)
 4th byte: Offset for the Triangle channel data. How far into the segment the data for the Triangle channel starts.
 5th byte: Offset for the Square 1 channel data.
-6th byte: Offset for the Noise and/or Sample channel data. There is only one offset for the Noise and Sample channels, so a segment can have one or the other but not both. I am not sure how it decides which channel it actually is between the two.
+6th byte: Offset for the Noise and Sample channel data.
 
 A value of $00 for the 4th-6th bytes indicates that channel is not present in the segment.
 
@@ -178,4 +178,5 @@ Tempos:
 120bpm  $7D
 112bpm  $8B
 106bpm  $98
+
 100bpm  $A6
